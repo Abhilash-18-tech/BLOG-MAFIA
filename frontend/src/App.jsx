@@ -13,6 +13,7 @@ import MyArticles from './pages/MyArticles';
 import SavedPosts from './pages/SavedPosts';
 import LikedPosts from './pages/LikedPosts';
 import Dashboard from './pages/Dashboard';
+import Chat from './pages/Chat';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -60,6 +61,11 @@ function App() {
             <Route path="/liked-posts" element={
               <ProtectedRoute>
                 <LikedPosts />
+              </ProtectedRoute>
+            } />
+            <Route path="/chat" element={
+              <ProtectedRoute>
+                <Chat />
               </ProtectedRoute>
             } />
             <Route path="/dashboard" element={

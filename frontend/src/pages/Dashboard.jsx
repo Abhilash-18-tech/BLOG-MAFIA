@@ -27,10 +27,15 @@ const Dashboard = () => {
           api.get('/users/me/saved'),
           api.get('/users/me/liked')
         ]);
+        const posts = postsRes.data?.data || [];
+        const totalViews = posts.reduce((acc, post) => acc + (post.views || 0), 0);
+        const totalLikes = posts.reduce((acc, post) => acc + (post.likesCount || 0), 0);
+
         setStats({
-          articles: postsRes.data?.data?.length || 0,
-          saved: savedRes.data?.data?.length || 0,
-          liked: likedRes.data?.data?.length || 0
+          articles: posts.length,
+          views: totalViews,
+          likes: totalLikes,
+          saved: savedRes.data?.data?.length || 0
         });
         setError('');
       } catch (err) {
@@ -54,18 +59,22 @@ const Dashboard = () => {
         ) : error ? (
           <div className="mt-6 bg-red-50 text-red-600 p-4 rounded-md">{error}</div>
         ) : (
-          <div className="mt-8 grid gap-6 sm:grid-cols-3">
-            <div className="settings-section">
-              <p className="settings-label">Articles</p>
-              <p className="text-2xl font-semibold text-[var(--ink)]">{stats.articles}</p>
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="metric-card">
+              <p className="metric-label">Articles</p>
+              <p className="metric-value">{stats.articles}</p>
             </div>
-            <div className="settings-section">
-              <p className="settings-label">Saved</p>
-              <p className="text-2xl font-semibold text-[var(--ink)]">{stats.saved}</p>
+            <div className="metric-card">
+              <p className="metric-label">Total Views</p>
+              <p className="metric-value">{stats.views?.toLocaleString() || 0}</p>
             </div>
-            <div className="settings-section">
-              <p className="settings-label">Liked</p>
-              <p className="text-2xl font-semibold text-[var(--ink)]">{stats.liked}</p>
+            <div className="metric-card">
+              <p className="metric-label">Total Likes</p>
+              <p className="metric-value">{stats.likes?.toLocaleString() || 0}</p>
+            </div>
+            <div className="metric-card">
+              <p className="metric-label">Saved by Others</p>
+              <p className="metric-value">{stats.saved?.toLocaleString() || 0}</p>
             </div>
           </div>
         )}

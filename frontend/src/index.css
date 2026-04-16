@@ -8,9 +8,11 @@
   --accent: #2b50ff;
   --accent-soft: rgba(43, 80, 255, 0.12);
   --gold: #c7a23a;
-  --border: #e5e7eb;
+  --border: #1f2937;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.2);
   --shadow-soft: 0 12px 30px rgba(15, 15, 15, 0.08);
-  --shadow-lift: 0 18px 36px rgba(15, 15, 15, 0.12);
+  --shadow-lift: 0 20px 40px rgba(15, 15, 15, 0.15);
 }
 
 .theme-dark {
@@ -22,8 +24,45 @@
   --accent-soft: rgba(122, 162, 255, 0.12);
   --gold: #d9b24c;
   --border: #1f2937;
+  --glass-bg: rgba(17, 17, 17, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.05);
   --shadow-soft: 0 12px 30px rgba(0, 0, 0, 0.4);
-  --shadow-lift: 0 18px 36px rgba(0, 0, 0, 0.55);
+  --shadow-lift: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Buttons with ripple micro-interaction */
+.btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.btn-ripple::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
+}
+.btn-ripple:focus:not(:active)::after {
+  animation: ripple 1s ease-out;
+}
+@keyframes ripple {
+  0% { transform: scale(0, 0); opacity: 0.5; }
+  20% { transform: scale(25, 25); opacity: 0.3; }
+  100% { opacity: 0; transform: scale(40, 40); }
 }
 
 body {
@@ -56,7 +95,9 @@ body::before {
 }
 
 .nav-shell {
-  background-color: var(--surface);
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 8px 20px rgba(15, 15, 15, 0.05);
 }
@@ -101,6 +142,8 @@ body::before {
   padding: 16px;
   z-index: 50;
   animation: menuFade 0.18s ease;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 .user-menu-top {
@@ -615,4 +658,122 @@ body::before {
     width: 100%;
     justify-content: space-between;
   }
+}
+
+/* =========================================
+   Modern Blog Detail Styles (Medium/Notion)
+   ========================================= */
+
+.blog-cover {
+  width: 100%;
+  aspect-ratio: 21/9;
+  object-fit: cover;
+  border-radius: 20px;
+  margin-bottom: 32px;
+  box-shadow: var(--shadow-soft);
+}
+
+.blog-content {
+  font-size: 18px;
+  line-height: 1.8;
+  color: var(--ink);
+}
+
+.blog-sidebar {
+  position: sticky;
+  top: 100px;
+  border-left: 2px solid var(--border);
+  padding-left: 16px;
+}
+
+.floating-actions {
+  position: sticky;
+  top: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  padding: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-soft);
+}
+
+/* =========================================
+   Notion-Style Editor
+   ========================================= */
+
+.editor-notion {
+  width: 100%;
+  min-height: 500px;
+  font-size: 1.125rem;
+  line-height: 1.7;
+  outline: none;
+}
+
+.editor-notion[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  cursor: text;
+}
+
+.editor-slash-menu {
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lift);
+  width: 240px;
+  z-index: 50;
+  overflow: hidden;
+}
+
+.slash-item {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.slash-item:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* =========================================
+   Dashboard Widgets
+   ========================================= */
+
+.metric-card {
+  background: var(--surface);
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lift);
+}
+
+.metric-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 8px 0;
+  color: var(--ink);
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
 }

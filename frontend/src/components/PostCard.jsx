@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import api from '../api/axios';
 import {
   Heart,
@@ -152,164 +153,148 @@ const PostCard = ({ post, user, onDelete, isInitiallyLiked, isInitiallySaved }) 
   };
 
   return (
-    <div
-      ref={cardRef}
-      className={`post-card mb-10 card-reveal ${isVisible ? 'card-visible' : ''}`}
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 30 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
+      }}
+      className="bg-white rounded-[12px] shadow-sm hover:shadow-xl border border-gray-100 overflow-hidden flex flex-col group transition-all duration-300 ease-out hover:-translate-y-1"
     >
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-8 h-8 bg-gradient-to-tr from-[var(--accent)] to-[var(--gold)] rounded-full flex items-center justify-center font-semibold text-white text-[11px] uppercase shadow-sm">
-          {post.author?.username?.charAt(0) || '?'}
-        </div>
-        <span className="text-[13px] font-medium text-[var(--ink)] border-b border-transparent group-hover:border-[var(--ink)] transition">
-          {post.author?.username || 'Unknown Author'}
-        </span>
-        <span className="text-gray-300 text-xs">•</span>
-        <span className="text-[13px] text-[var(--muted)]">
-          {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </span>
-      </div>
-      
-      <Link to={`/posts/${post._id}`} className="block mt-2 flex-1">
-         <div className="flex justify-between items-start gap-6">
-            <div className="max-w-[75%]">
-              <h2 className="text-2xl font-brand font-bold text-[var(--ink)] mb-2 leading-tight group-hover:text-[var(--accent)] transition-colors">
-                {post.title}
-              </h2>
-              <p className="text-[var(--muted)] text-[15px] leading-relaxed line-clamp-3">
-                {post.description}
-              </p>
-            </div>
-            
-            {/* Optional Thumbnail on the right */}
-            <div className="w-[140px] h-[140px] bg-slate-100/50 rounded-2xl hidden sm:block overflow-hidden relative">
-              {post.image ? (
-                <img
-                  src={post.image.startsWith('http') ? post.image : `/uploads/${post.image}`}
-                  alt={post.title}
-                  className="post-image w-full h-full object-cover"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-40 transition-opacity">
-                  <span className="text-4xl font-brand text-slate-400 italic">B</span>
-                </div>
-              )}
-            </div>
-         </div>
-      </Link>
-      
-      <div className="mt-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-[13px] font-medium pill cursor-pointer">
+      <Link to={`/posts/${post._id}`} className="block relative h-48 sm:h-[220px] overflow-hidden bg-gray-50 flex-shrink-0">
+        {post.image ? (
+          <img
+            src={post.image.startsWith('http') ? post.image : `/uploads/${post.image}`}
+            alt={post.title}
+            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 bg-gray-100 group-hover:scale-105 transition-transform duration-500">
+            <span className="text-5xl font-brand font-bold opacity-30">B</span>
+          </div>
+        )}
+        <div className="absolute top-4 left-4">
+          <span className="bg-white/90 backdrop-blur-sm text-[var(--accent)] text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
             {post.category?.name || 'Uncategorized'}
           </span>
-          <span className="text-[13px] text-[var(--muted)]">4 min read</span>
         </div>
-        {isOwner && (
-          <div className="flex items-center gap-2">
-            <Link
-              to={`/edit/${post._id}`}
-              className="px-3 py-1 text-xs bg-[var(--gold)] text-white rounded-full hover:opacity-90"
-            >
-              Edit
-            </Link>
+      </Link>
+      
+      <div className="p-6 flex flex-col flex-1">
+        <div className="flex items-center text-xs text-gray-400 mb-3 space-x-2 font-medium">
+          <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[var(--accent)] to-[var(--gold)] flex items-center justify-center text-white text-[9px] uppercase">
+            {post.author?.username?.charAt(0) || '?'}
+          </div>
+          <span className="text-[var(--ink)]">{post.author?.username || 'Unknown'}</span>
+          <span>•</span>
+          <span>{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+        </div>
+        
+        <Link to={`/posts/${post._id}`} className="block flex-1 group-hover:text-[var(--accent)] transition-colors">
+          <h2 className="text-xl font-bold font-brand text-[var(--ink)] leading-snug mb-2 line-clamp-2">
+            {post.title}
+          </h2>
+          <p className="text-gray-500 text-sm leading-relaxed line-clamp-3 mb-4">
+            {post.description || 'No description provided for this post...'}
+          </p>
+        </Link>
+        
+        {/* Actions Footer */}
+        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+          <div className="flex gap-4">
             <button
               type="button"
-              onClick={() => onDelete?.(post._id)}
-              className="px-3 py-1 text-xs bg-red-500 text-white rounded-full hover:bg-red-600"
+              onClick={handleLike}
+              disabled={isActionBusy}
+              className={`flex items-center gap-1.5 text-xs font-medium transition ${
+                isLiked ? 'text-red-500' : 'text-gray-400 hover:text-[var(--accent)]'
+              }`}
+              aria-label={isLiked ? 'Unlike' : 'Like'}
             >
-              Delete
+              <Heart
+                className={`w-4 h-4 ${isLikeBump ? 'scale-125' : 'scale-100'} transition-transform ${
+                  isLiked ? 'fill-current' : ''
+                }`}
+              />
+              {likeCount}
             </button>
+            <button
+              onClick={() => setIsCommentOpen(!isCommentOpen)}
+              className={`flex items-center gap-1.5 text-xs font-medium transition ${
+                isCommentOpen ? 'text-[var(--accent)]' : 'text-gray-400 hover:text-[var(--accent)]'
+              }`}
+              aria-label="Comments"
+            >
+              <MessageCircle className="w-4 h-4" />
+              {commentCount}
+            </button>
+          </div>
+          
+          <div className="flex gap-2">
+             <button
+                type="button"
+                onClick={handleSave}
+                disabled={isActionBusy}
+                className={`flex items-center justify-center p-1.5 rounded-full transition ${
+                  isSaved ? 'text-[var(--accent)] bg-[var(--accent-soft)]' : 'text-gray-400 hover:text-[var(--accent)] hover:bg-gray-100'
+                }`}
+                aria-label={isSaved ? 'Unsave' : 'Save'}
+              >
+                <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+             </button>
+             {isOwner && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(post._id)}
+                  className="flex items-center justify-center p-1.5 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition"
+                  aria-label="Delete post"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+             )}
+          </div>
+        </div>
+
+        {/* Inline Comments Area (simplified) */}
+        {isCommentOpen && (
+          <div className="mt-4 pt-4 border-t border-dashed border-gray-200">
+             {user ? (
+               <form onSubmit={handleAddComment} className="flex gap-2 mb-4">
+                <input 
+                  type="text" 
+                  value={commentValue}
+                  onChange={(e) => setCommentValue(e.target.value)}
+                  placeholder="Add a comment..." 
+                  className="w-full text-sm py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent-soft)]"
+                />
+                <button type="submit" disabled={!commentValue.trim()} className="bg-[var(--ink)] text-white px-3 py-1.5 text-xs font-semibold rounded-lg flex-shrink-0 disabled:opacity-50">
+                  Post
+                </button>
+               </form>
+             ) : (
+               <div className="bg-gray-50 p-2 rounded text-center mb-4 text-xs text-gray-500">
+                 Please <Link to="/login" className="text-[var(--accent)] font-semibold hover:underline">sign in</Link> to reply.
+               </div>
+             )}
+             
+             <div className="space-y-3">
+                {comments.map(c => (
+                  <div key={c.id} className="flex gap-2">
+                    <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                      {c.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 bg-gray-50 p-2 rounded-lg text-xs border border-gray-100">
+                      <p className="font-bold text-gray-800 mb-0.5">{c.name}</p>
+                      <p className="text-gray-600 leading-relaxed">{c.text}</p>
+                    </div>
+                  </div>
+                ))}
+             </div>
           </div>
         )}
       </div>
-
-      <div className="interaction-bar mt-6">
-        <div className="interaction-left">
-          <button
-            type="button"
-            onClick={handleLike}
-            className={`action-btn ${isLiked ? 'action-active' : ''} ${isLikeBump ? 'action-bump' : ''}`}
-            disabled={isActionBusy}
-          >
-            <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-            <span>{likeCount}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsCommentOpen((prev) => !prev)}
-            className="action-btn"
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>{commentCount}</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className={`action-btn ${isSaved ? 'action-active' : ''}`}
-            disabled={isActionBusy}
-          >
-            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
-            <span className="hidden sm:inline">Save</span>
-          </button>
-        </div>
-        <div className="interaction-right" ref={shareRef}>
-          <button
-            type="button"
-            className="action-btn"
-            onClick={() => setIsSharing((prev) => !prev)}
-          >
-            <Share2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Share</span>
-          </button>
-          {isSharing && (
-            <div className="share-menu">
-              <button type="button" onClick={handleCopyLink} className="share-item">
-                <Copy className="w-4 h-4" />
-                Copy link
-              </button>
-              <button type="button" className="share-item">
-                <Link2 className="w-4 h-4" />
-                Twitter
-              </button>
-              <button type="button" className="share-item">
-                <MessageCircle className="w-4 h-4" />
-                WhatsApp
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {isCommentOpen && (
-        <div className="comment-panel">
-          <form onSubmit={handleAddComment} className="comment-form">
-            <input
-              type="text"
-              placeholder="Write a comment..."
-              value={commentValue}
-              onChange={(event) => setCommentValue(event.target.value)}
-              className="comment-input"
-            />
-            <button type="submit" className="comment-submit">
-              Post
-            </button>
-          </form>
-          <div className="comment-list">
-            {comments.map((comment) => (
-              <div key={comment.id} className="comment-item">
-                <div className="comment-avatar">
-                  {comment.name.charAt(0)}
-                </div>
-                <div>
-                  <p className="comment-name">{comment.name}</p>
-                  <p className="comment-text">{comment.text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    </motion.div>
   );
 };
 

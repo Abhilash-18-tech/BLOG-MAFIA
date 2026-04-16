@@ -13,7 +13,8 @@ import {
   Bell,
   LogOut,
   FileText,
-  Sparkles
+  Sparkles,
+  MessageCircle
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -94,21 +95,16 @@ const Navbar = () => {
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center justify-center flex-1 px-8">
-            <div className="flex items-center search-shell rounded-full px-5 py-2 w-full max-w-lg">
-              <Search className="w-4 h-4 text-[var(--muted)] mr-3" />
-              <input
-                type="text"
-                placeholder="Search stories, topics, writers"
-                className="bg-transparent text-sm focus:outline-none w-full text-[var(--ink)]"
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
-                aria-label="Search posts"
-              />
-            </div>
+          <div className="hidden md:flex items-center justify-center space-x-6 flex-1 px-8 text-sm font-medium text-[var(--ink)]">
+            <Link to="/" className="hover:text-[var(--accent)] transition">Home</Link>
+            <a href="#" onClick={(e) => { e.preventDefault(); alert('Pages section coming soon!'); }} className="hover:text-[var(--accent)] transition">Pages</a>
+            <Link to="/" className="hover:text-[var(--accent)] transition">Blog</Link>
+            <a href="#" onClick={(e) => { e.preventDefault(); alert('Categories are in the sidebar on the Home page!'); }} className="hover:text-[var(--accent)] transition">Categories</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); alert('Shop section coming soon!'); }} className="hover:text-[var(--accent)] transition">Shop</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); alert('Elements section coming soon!'); }} className="hover:text-[var(--accent)] transition">Elements</a>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             <button
               type="button"
               onClick={() => setIsDark((prev) => !prev)}
@@ -127,6 +123,9 @@ const Navbar = () => {
                   <PenSquare className="w-5 h-5 mr-1" />
                   Write
                 </Link>
+                <Link to="/chat" className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition text-[var(--muted)]">
+                  <MessageCircle className="w-5 h-5" />
+                </Link>
                 <div className="relative" ref={menuRef}>
                   <button
                     type="button"
@@ -137,7 +136,7 @@ const Navbar = () => {
                   >
                     <span className="sr-only">Open user menu</span>
                     <div className="relative h-10 w-10 rounded-full bg-[var(--ink)] text-white flex items-center justify-center font-bold uppercase shadow-inner">
-                      {user.username.charAt(0)}
+                      {user?.username?.charAt(0) || user?.email?.charAt(0) || 'U'}
                       <span className="avatar-badge">{notifications.length}</span>
                     </div>
                   </button>
@@ -147,11 +146,11 @@ const Navbar = () => {
                       <div className="user-menu-panel" role="menu">
                         <div className="user-menu-top">
                           <div className="user-menu-avatar">
-                            {user.username.charAt(0)}
+                            {user?.username?.charAt(0) || user?.email?.charAt(0) || 'U'}
                           </div>
                           <div>
-                            <p className="text-base font-semibold">{user.username}</p>
-                            <p className="text-xs text-[var(--muted)] truncate">{user.email}</p>
+                            <p className="text-base font-semibold">{user?.username || 'User'}</p>
+                            <p className="text-xs text-[var(--muted)] truncate">{user?.email}</p>
                           </div>
                           <button
                             type="button"
@@ -164,6 +163,14 @@ const Navbar = () => {
 
                         <div className="user-menu-section">
                           <p className="user-menu-title">Content</p>
+                          <Link
+                            to="/chat"
+                            className="user-menu-item"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            Messages
+                          </Link>
                           <Link
                             to="/my-articles"
                             className="user-menu-item"

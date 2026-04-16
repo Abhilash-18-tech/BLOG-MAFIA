@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Image as ImageIcon, Heading1, Code, Type } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../hooks/useAuth';
 
@@ -13,6 +14,11 @@ const CreatePost = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
+  // Slash command state
+  const [showSlashMenu, setShowSlashMenu] = useState(false);
+  const [slashMenuPos, setSlashMenuPos] = useState({ top: 0, left: 0 });
+  const editorRef = useRef(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,6 +32,38 @@ const CreatePost = () => {
     };
     fetchCategories();
   }, []);
+
+  // Handle Notion-like slash commands
+  const handleEditorInput = (e) => {
+     const value = e.target.innerText;
+     setContent(value);
+     
+     // Detect slash
+     const selection = window.getSelection();
+     if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const textBeforeCursor = range.startContainer.textContent?.slice(0, range.startOffset);
+        
+        if (textBeforeCursor && textBeforeCursor.endsWith('/')) {
+           const rect = range.getBoundingClientRect();
+           setSlashMenuPos({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX });
+           setShowSlashMenu(true);
+        } else {
+           setShowSlashMenu(false);
+        }
+     }
+  };
+
+  const insertFormatting = (format) => {
+     setShowSlashMenu(false);
+     document.execCommand('delete', false); // removes the '/'
+     if (format === 'h1') {
+        document.execCommand('formatBlock', false, 'H1');
+     } else if (format === 'p') {
+        document.execCommand('formatBlock', false, 'P');
+     }
+     editorRef.current?.focus();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,9 +97,22 @@ const CreatePost = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {error && <div className="text-red-600 bg-red-50 p-3 rounded">{error}</div>}
+    <main className="max-w-4xl mx-auto py-12 px-6 sm:px-8 w-full relative">
+      <div className="flex justify-between items-center mb-8">
+        <span className="text-sm text-[var(--muted)] flex items-center gap-2">
+           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Draft Auto-saved
+        </span>
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="btn-primary btn-ripple px-6 py-2.5 rounded-full text-sm font-semibold disabled:opacity-50"
+        >
+          {loading ? 'Publishing...' : 'Publish'}
+        </button>
+      </div>
+
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
+        {error && <div className="text-red-600 bg-red-50 p-4 rounded-xl border border-red-100">{error}</div>}
         
         <div>
           <input
@@ -69,7 +120,7 @@ const CreatePost = () => {
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full text-4xl lg:text-5xl font-bold placeholder-gray-300 border-none focus:ring-0 p-0 bg-transparent text-gray-900"
+            className="w-full text-5xl lg:text-6xl font-brand font-black placeholder-[var(--muted)] border-none focus:ring-0 p-0 bg-transparent text-[var(--ink)] leading-tight"
             autoFocus
           />
         </div>
@@ -77,19 +128,19 @@ const CreatePost = () => {
         <div>
           <input
             type="text"
-            placeholder="Short description (max 500 chars)"
+            placeholder="Write a short description..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full text-xl text-gray-500 placeholder-gray-300 border-none focus:ring-0 p-0 bg-transparent"
+            className="w-full text-xl text-[var(--muted)] placeholder-[var(--muted)] opacity-70 border-none focus:ring-0 p-0 bg-transparent font-medium"
             maxLength={500}
           />
         </div>
 
-        <div>
+        <div className="flex gap-6 items-center border-y border-[var(--border)] py-6">
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full max-w-xs border-gray-300 text-gray-600 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm"
+            className="border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] rounded-full px-4 py-2 text-sm shadow-sm focus:border-[var(--accent)] focus:ring-[var(--accent)] outline-none cursor-pointer"
           >
             <option value="">Select a category</option>
             {categories.map((c) => (
@@ -98,38 +149,55 @@ const CreatePost = () => {
               </option>
             ))}
           </select>
+
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-[var(--muted)] whitespace-nowrap">Cover Image</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files?.[0] || null)}
+              className="text-sm text-[var(--muted)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[var(--accent-soft)] file:text-[var(--accent)] hover:file:bg-[var(--accent)] hover:file:text-white cursor-pointer transition-colors"
+            />
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Image (optional)</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImage(e.target.files?.[0] || null)}
-            className="w-full max-w-xs text-sm text-gray-600"
+        {/* Notion Style Editor */}
+        <div className="min-h-[400px] relative mt-4">
+          <div
+             ref={editorRef}
+             className="editor-notion"
+             contentEditable
+             data-placeholder="Press '/' for commands, or start typing..."
+             onInput={handleEditorInput}
+             suppressContentEditableWarning={true}
           />
         </div>
 
-        <div className="min-h-[400px]">
-          <textarea
-            placeholder="Start writing your story..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="w-full h-[500px] text-lg text-gray-800 placeholder-gray-300 border-none focus:ring-0 p-0 bg-transparent resize-none leading-relaxed"
-          ></textarea>
-        </div>
-
-        <div className="pt-4 border-t border-gray-100 flex justify-end">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-green-600 text-white hover:bg-green-700 px-6 py-2 rounded-full text-sm font-medium transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Publishing...' : 'Publish'}
-          </button>
-        </div>
+        {/* Slash Command Popover */}
+        {showSlashMenu && (
+           <div 
+             className="editor-slash-menu"
+             style={{ top: slashMenuPos.top + 20, left: slashMenuPos.left }}
+           >
+              <div className="px-3 py-2 text-xs font-semibold text-[var(--muted)] uppercase tracking-wider border-b border-[var(--border)]">
+                 Basic Blocks
+              </div>
+              <div className="slash-item" onMouseDown={(e) => { e.preventDefault(); insertFormatting('p'); }}>
+                 <Type className="w-4 h-4" /> Text
+              </div>
+              <div className="slash-item" onMouseDown={(e) => { e.preventDefault(); insertFormatting('h1'); }}>
+                 <Heading1 className="w-4 h-4" /> Heading 1
+              </div>
+              <div className="slash-item disabled opacity-50 cursor-not-allowed" title="Coming soon">
+                 <ImageIcon className="w-4 h-4" /> Image
+              </div>
+              <div className="slash-item disabled opacity-50 cursor-not-allowed" title="Coming soon">
+                 <Code className="w-4 h-4" /> Code Block
+              </div>
+           </div>
+        )}
       </form>
-    </div>
+    </main>
   );
 };
 

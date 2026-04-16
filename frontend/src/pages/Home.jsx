@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import api from '../api/axios';
 import PostCard from '../components/PostCard';
 import Sidebar from '../components/Sidebar';
 import Loader from '../components/Loader';
+import Hero from '../components/Hero';
 import { useAuth } from '../hooks/useAuth';
 
 const Home = () => {
@@ -18,6 +20,7 @@ const Home = () => {
   const [listError, setListError] = useState('');
   const [likedIds, setLikedIds] = useState([]);
   const [savedIds, setSavedIds] = useState([]);
+  const [visibleCount, setVisibleCount] = useState(6);
   const searchTerm = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return (params.get('q') || '').trim().toLowerCase();
@@ -38,6 +41,13 @@ const Home = () => {
       );
     });
   }, [posts, searchTerm]);
+
+  // Reset pagination when category or search changes
+  useEffect(() => {
+    setVisibleCount(6);
+  }, [selectedCategory, searchTerm]);
+
+  const visiblePosts = filteredPosts.slice(0, visibleCount);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -110,81 +120,111 @@ const Home = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Main Content */}
-        <div className="lg:col-span-8 w-full">
-          <div className="mb-10 pb-6 border-b border-[var(--border)] flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">Curated by Blog Mafia</p>
-              <h1 className="text-4xl font-brand font-bold text-[var(--ink)] mt-3">
-              {selectedCategory 
-                ? `${categories.find(c => c._id === selectedCategory)?.name || ''} Articles` 
-                : 'Latest Articles'}
-              </h1>
+    <div className="w-full flex justify-center flex-col items-center pb-20">
+      <Hero />
+      <div className="max-w-7xl mx-auto px-4 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Main Content */}
+          <div className="lg:col-span-8 w-full">
+            <div className="mb-10 pb-6 border-b border-[var(--border)] flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">Curated for you</p>
+                <h1 className="text-4xl font-brand font-bold text-[var(--ink)] mt-3">
+                {selectedCategory 
+                  ? `${categories.find(c => c._id === selectedCategory)?.name || ''} Articles` 
+                  : 'Latest Articles'}
+                </h1>
+              </div>
+            </div>
+            
+            {loading ? (
+              <div className="py-6"><Loader /></div>
+            ) : error ? (
+              <div className="bg-red-50 text-red-600 p-4 rounded-md">{error}</div>
+            ) : visiblePosts.length === 0 ? (
+              <div className="text-[var(--muted)] text-center py-20 flex flex-col items-center bg-[var(--surface)] border border-[var(--border)] rounded-3xl shadow-sm">
+                 <div className="w-16 h-16 bg-[var(--accent-soft)] rounded-full flex items-center justify-center mb-4 text-[var(--accent)]">
+                    <span className="text-2xl">B</span>
+                 </div>
+                 <h3 className="text-2xl font-brand font-bold text-[var(--ink)] mb-2">
+                   {searchTerm ? 'No matches found' : 'No articles yet'}
+                 </h3>
+                 <p className="mb-6 max-w-sm">
+                   {searchTerm
+                     ? 'Try a different keyword or clear your search.'
+                     : 'There are no stories published in this category right now. Be the first to share your thoughts.'}
+                 </p>
+                 {!searchTerm && (user ? (
+                   <Link to="/create-post" className="btn-primary px-6 py-3 rounded-full text-sm font-semibold">
+                     Start writing
+                   </Link>
+                 ) : (
+                   <Link to="/register" className="btn-primary px-6 py-3 rounded-full text-sm font-semibold">
+                     Create your first post
+                   </Link>
+                 ))}
+              </div>
+            ) : (
+              <>
+                <motion.div 
+                  className="grid grid-cols-1 md:grid-cols-2 gap-8"
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, margin: "-50px" }}
+                  variants={{
+                    hidden: { opacity: 0 },
+                    show: {
+                      opacity: 1,
+                      transition: { staggerChildren: 0.1 }
+                    }
+                  }}
+                >
+                  {listError && (
+                    <div className="col-span-1 md:col-span-2 mb-6 bg-amber-50 text-amber-700 p-4 rounded-md">
+                      {listError}
+                    </div>
+                  )}
+                  {actionError && (
+                    <div className="col-span-1 md:col-span-2 mb-6 bg-red-50 text-red-600 p-4 rounded-md">
+                      {actionError}
+                    </div>
+                  )}
+                  {visiblePosts.map((post) => (
+                    <PostCard
+                      key={post._id}
+                      post={post}
+                      user={user}
+                      onDelete={handleDeletePost}
+                      isInitiallyLiked={likedIds.includes(post._id)}
+                      isInitiallySaved={savedIds.includes(post._id)}
+                    />
+                  ))}
+                </motion.div>
+                
+                {visibleCount < filteredPosts.length && (
+                  <div className="mt-12 flex justify-center">
+                    <button 
+                      onClick={() => setVisibleCount(prev => prev + 6)}
+                      className="px-8 py-3 bg-[var(--ink)] hover:bg-black text-white font-medium rounded-full transition-all hover:scale-105 shadow-md"
+                    >
+                      Load More
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="lg:col-span-4 lg:border-l border-[var(--border)] lg:pl-10">
+            <div className="sticky top-24 self-start">
+              <Sidebar 
+                categories={categories} 
+                selectedCategory={selectedCategory} 
+                onSelectCategory={setSelectedCategory} 
+              />
             </div>
           </div>
-          
-          {loading ? (
-            <div className="py-6"><Loader /></div>
-          ) : error ? (
-            <div className="bg-red-50 text-red-600 p-4 rounded-md">{error}</div>
-          ) : filteredPosts.length === 0 ? (
-            <div className="text-[var(--muted)] text-center py-20 flex flex-col items-center bg-[var(--surface)] border border-[var(--border)] rounded-3xl shadow-sm">
-               <div className="w-16 h-16 bg-[var(--accent-soft)] rounded-full flex items-center justify-center mb-4 text-[var(--accent)]">
-                  <span className="text-2xl">B</span>
-               </div>
-               <h3 className="text-2xl font-brand font-bold text-[var(--ink)] mb-2">
-                 {searchTerm ? 'No matches found' : 'No articles yet'}
-               </h3>
-               <p className="mb-6 max-w-sm">
-                 {searchTerm
-                   ? 'Try a different keyword or clear your search.'
-                   : 'There are no stories published in this category right now. Be the first to share your thoughts.'}
-               </p>
-               {!searchTerm && (user ? (
-                 <Link to="/create-post" className="btn-primary px-6 py-3 rounded-full text-sm font-semibold">
-                   Start writing
-                 </Link>
-               ) : (
-                 <Link to="/register" className="btn-primary px-6 py-3 rounded-full text-sm font-semibold">
-                   Create your first post
-                 </Link>
-               ))}
-            </div>
-          ) : (
-            <div className="flex flex-col">
-              {listError && (
-                <div className="mb-6 bg-amber-50 text-amber-700 p-4 rounded-md">
-                  {listError}
-                </div>
-              )}
-              {actionError && (
-                <div className="mb-6 bg-red-50 text-red-600 p-4 rounded-md">
-                  {actionError}
-                </div>
-              )}
-               {filteredPosts.map(post => (
-                 <PostCard
-                   key={post._id}
-                   post={post}
-                   user={user}
-                   onDelete={handleDeletePost}
-                   isInitiallyLiked={likedIds.includes(post._id)}
-                   isInitiallySaved={savedIds.includes(post._id)}
-                 />
-               ))}
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="lg:col-span-4 border-l border-gray-100 pl-8 sticky top-24 self-start hidden lg:block h-screen">
-            <Sidebar 
-              categories={categories} 
-              selectedCategory={selectedCategory} 
-              onSelectCategory={setSelectedCategory} 
-            />
         </div>
       </div>
     </div>
