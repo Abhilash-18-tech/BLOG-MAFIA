@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../api/axios';
@@ -20,12 +20,18 @@ const Home = () => {
   const [listError, setListError] = useState('');
   const [likedIds, setLikedIds] = useState([]);
   const [savedIds, setSavedIds] = useState([]);
-  const [visibleCount, setVisibleCount] = useState(6);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const observerTarget = useRef(null);
+
   const searchTerm = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return (params.get('q') || '').trim().toLowerCase();
   }, [location.search]);
 
+  // Client-side filtering is retained for search terms on currently fetched subset.
   const filteredPosts = useMemo(() => {
     if (!searchTerm) return posts;
     return posts.filter((post) => {
@@ -42,12 +48,12 @@ const Home = () => {
     });
   }, [posts, searchTerm]);
 
-  // Reset pagination when category or search changes
+  // Reset pagination when category changes
   useEffect(() => {
-    setVisibleCount(6);
+    setPage(1);
+    setPosts([]);
+    setHasMore(true);
   }, [selectedCategory, searchTerm]);
-
-  const visiblePosts = filteredPosts.slice(0, visibleCount);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -63,23 +69,59 @@ const Home = () => {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      setLoading(true);
+      if (page === 1) setLoading(true);
+      else setIsFetchingMore(true);
+
       try {
-        let url = '/posts';
+        let url = `/posts?page=${page}&limit=5`;
         if (selectedCategory) {
-          url = `/posts?category=${selectedCategory}`;
+          url += `&category=${selectedCategory}`;
         }
+        
         const res = await api.get(url);
-        setPosts(res.data.data);
+        const { data, currentPage, totalPages } = res.data;
+
+        if (page === 1) {
+          setPosts(data);
+        } else {
+          setPosts(prev => {
+            const newPosts = data.filter(p => !prev.some(ep => ep._id === p._id));
+            return [...prev, ...newPosts];
+          });
+        }
+
+        setTotalPages(totalPages);
+        setHasMore(currentPage < totalPages);
         setError('');
       } catch (err) {
         setError('Failed to fetch posts. Please try again later.');
       } finally {
         setLoading(false);
+        setIsFetchingMore(false);
       }
     };
+    
+    // In case user searches, we don't spam the paginated API as search is client-side right now
     fetchPosts();
-  }, [selectedCategory]);
+  }, [selectedCategory, page, searchTerm]);
+
+  // Infinite Scroll Observer
+  useEffect(() => {
+    if (!observerTarget.current || !hasMore || loading || isFetchingMore) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) {
+          setPage(prev => prev + 1);
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    observer.observe(observerTarget.current);
+    
+    return () => observer.disconnect();
+  }, [hasMore, loading, isFetchingMore]);
 
   useEffect(() => {
     const fetchUserLists = async () => {
@@ -126,7 +168,7 @@ const Home = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Main Content */}
           <div className="lg:col-span-8 w-full">
-            <div className="mb-10 pb-6 border-b border-[var(--border)] flex items-center justify-between">
+                <div className="mb-10 pb-6 border-b border-[var(--border)] flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">Curated for you</p>
                 <h1 className="text-4xl font-brand font-bold text-[var(--ink)] mt-3">
@@ -137,11 +179,11 @@ const Home = () => {
               </div>
             </div>
             
-            {loading ? (
+            {loading && page === 1 ? (
               <div className="py-6"><Loader /></div>
             ) : error ? (
               <div className="bg-red-50 text-red-600 p-4 rounded-md">{error}</div>
-            ) : visiblePosts.length === 0 ? (
+            ) : filteredPosts.length === 0 ? (
               <div className="text-[var(--muted)] text-center py-20 flex flex-col items-center bg-[var(--surface)] border border-[var(--border)] rounded-3xl shadow-sm">
                  <div className="w-16 h-16 bg-[var(--accent-soft)] rounded-full flex items-center justify-center mb-4 text-[var(--accent)]">
                     <span className="text-2xl">B</span>
@@ -189,7 +231,7 @@ const Home = () => {
                       {actionError}
                     </div>
                   )}
-                  {visiblePosts.map((post) => (
+                  {filteredPosts.map((post) => (
                     <PostCard
                       key={post._id}
                       post={post}
@@ -201,14 +243,20 @@ const Home = () => {
                   ))}
                 </motion.div>
                 
-                {visibleCount < filteredPosts.length && (
-                  <div className="mt-12 flex justify-center">
+                {hasMore && (
+                  <div className="mt-12 flex justify-center pb-8" ref={observerTarget}>
                     <button 
-                      onClick={() => setVisibleCount(prev => prev + 6)}
-                      className="px-8 py-3 bg-[var(--ink)] hover:bg-black text-white font-medium rounded-full transition-all hover:scale-105 shadow-md"
+                      onClick={() => setPage(prev => prev + 1)}
+                      disabled={isFetchingMore}
+                      className="px-8 py-3 bg-[var(--ink)] hover:bg-black text-white font-medium rounded-full transition-all hover:scale-105 shadow-md disabled:opacity-50 disabled:hover:scale-100"
                     >
-                      Load More
+                      {isFetchingMore ? 'Loading More...' : 'Load More'}
                     </button>
+                  </div>
+                )}
+                {!hasMore && filteredPosts.length > 0 && (
+                  <div className="mt-12 flex justify-center pb-8 text-[var(--muted)] text-sm">
+                    No more posts to load.
                   </div>
                 )}
               </>

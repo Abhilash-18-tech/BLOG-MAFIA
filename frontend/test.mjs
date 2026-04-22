@@ -1,0 +1,1 @@
+import React from 'react'; import { motion } from 'framer-motion'; import Typewriter from 'typewriter-effect'; import Lottie from 'lottie-react'; console.log('Typewriter:', typeof Typewriter); console.log('Lottie:', typeof Lottie); console.log('motion.div:', typeof motion.div);

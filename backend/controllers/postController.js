@@ -9,6 +9,10 @@ exports.getPosts = async (req, res, next) => {
     let query;
     const reqQuery = { ...req.query };
 
+    // Fields to exclude from filtering
+    const removeFields = ['select', 'sort', 'page', 'limit'];
+    removeFields.forEach(param => delete reqQuery[param]);
+
     // Create query string
     let queryStr = JSON.stringify(reqQuery);
 
@@ -26,12 +30,25 @@ exports.getPosts = async (req, res, next) => {
     // Sort by newest first
     query = query.sort('-createdAt');
 
+    // Pagination
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 5;
+    const skip = (page - 1) * limit;
+
+    query = query.skip(skip).limit(limit);
+
     // Executing query
     const posts = await query;
+    
+    // Get total count
+    const totalPosts = await Post.countDocuments(JSON.parse(queryStr));
+    const totalPages = Math.ceil(totalPosts / limit);
 
     res.status(200).json({
       success: true,
       count: posts.length,
+      currentPage: page,
+      totalPages,
       data: posts
     });
   } catch (err) {
@@ -52,11 +69,18 @@ exports.getPost = async (req, res, next) => {
       .populate({
         path: 'category',
         select: 'name'
+      })
+      .populate({
+        path: 'comments.user',
+        select: 'username profilePicture'
       });
 
     if (!post) {
       return res.status(404).json({ success: false, error: 'Post not found' });
     }
+
+    post.views = (post.views || 0) + 1;
+    await post.save();
 
     res.status(200).json({
       success: true,
@@ -76,6 +100,10 @@ exports.createPost = async (req, res, next) => {
 
     // Add author to payload
     payload.author = req.user.id;
+
+    if (payload.content) {
+      payload.readTime = Math.max(1, Math.ceil(payload.content.split(' ').length / 200));
+    }
 
     if (req.file) {
       payload.image = req.file.filename;
@@ -112,6 +140,10 @@ exports.updatePost = async (req, res, next) => {
     }
 
     const payload = req.body || {};
+
+    if (payload.content) {
+      payload.readTime = Math.max(1, Math.ceil(payload.content.split(' ').length / 200));
+    }
 
     if (req.file) {
       payload.image = req.file.filename;
@@ -280,6 +312,36 @@ exports.unsavePost = async (req, res, next) => {
         saved: false
       }
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Add comment to post
+// @route   POST /api/posts/:id/comments
+// @access  Private
+exports.addComment = async (req, res, next) => {
+  try {
+    const post = await Post.findById(req.params.id).populate('comments.user', 'name profilePicture');
+    if (!post) return res.status(404).json({ success: false, error: 'Post not found' });
+
+    const newComment = {
+      user: req.user._id,
+      text: req.body.text
+    };
+
+    post.comments.push(newComment);
+    await post.save();
+
+    const populatedPost = await Post.findById(req.params.id).populate('comments.user', 'name profilePicture');
+    const addedComment = populatedPost.comments[populatedPost.comments.length - 1];
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(req.params.id).emit('new_comment', addedComment);
+    }
+
+    res.status(200).json({ success: true, data: addedComment });
   } catch (err) {
     next(err);
   }

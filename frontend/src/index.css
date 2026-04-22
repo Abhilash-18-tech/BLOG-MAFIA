@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap");
 
 :root {
   --bg: #f9f9f9;
@@ -776,4 +777,212 @@ body::before {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
+}
+
+.auth-shell {
+  min-height: 100vh;
+  background: radial-gradient(circle at top right, rgba(43, 80, 255, 0.2), transparent 45%),
+    linear-gradient(135deg, #f9fbff 0%, #f6f2ea 50%, #f2f6ff 100%);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  font-family: "Manrope", "Segoe UI", sans-serif;
+}
+
+.auth-shell::before {
+  content: "";
+  position: absolute;
+  inset: -120px;
+  background-image: radial-gradient(circle, rgba(15, 15, 15, 0.05) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.auth-grid {
+  width: min(980px, 90vw);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  padding: 36px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-visual {
+  border-radius: 28px;
+  min-height: 360px;
+  color: #ffffff;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  box-shadow: 0 25px 55px rgba(15, 15, 15, 0.2);
+}
+
+.auth-visual::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 20, 30, 0.1), rgba(12, 16, 24, 0.75));
+}
+
+.auth-visual-content {
+  position: relative;
+  padding: 24px;
+  z-index: 1;
+  display: grid;
+  gap: 18px;
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: "Playfair Display", "Times New Roman", serif;
+  font-size: 28px;
+  letter-spacing: 0.02em;
+}
+
+.auth-brand-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.auth-highlight {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.auth-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 24px;
+  padding: 28px;
+  border: 1px solid rgba(15, 15, 15, 0.08);
+  box-shadow: 0 30px 60px rgba(15, 15, 15, 0.15);
+  animation: authFadeUp 0.6s ease both;
+}
+
+.auth-title {
+  font-family: "Playfair Display", "Times New Roman", serif;
+  font-size: 28px;
+  margin-bottom: 10px;
+  color: #141414;
+}
+
+.auth-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.auth-input {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(31, 41, 55, 0.15);
+  padding: 12px 14px;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: rgba(43, 80, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(43, 80, 255, 0.15);
+}
+
+.auth-primary {
+  background: linear-gradient(135deg, #1a1a1a, #3a3a3a);
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(15, 15, 15, 0.25);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #9ca3af;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 22px 0 16px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(15, 15, 15, 0.1);
+}
+
+.auth-social {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-social-btn {
+  border: 1px solid rgba(15, 15, 15, 0.1);
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #1f2937;
+  background: #ffffff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.auth-social-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(43, 80, 255, 0.3);
+  box-shadow: 0 10px 20px rgba(15, 15, 15, 0.08);
+}
+
+.auth-footer-link {
+  color: #2b50ff;
+  font-weight: 600;
+}
+
+@keyframes authFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

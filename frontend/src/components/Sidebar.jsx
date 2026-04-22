@@ -49,11 +49,15 @@ const Sidebar = ({ categories, onSelectCategory, selectedCategory }) => {
               onClick={() => onSelectCategory(category._id)}
               className={`flex items-center p-2 rounded-lg transition-colors text-left ${selectedCategory === category._id ? 'bg-gray-50 font-semibold text-[var(--accent)]' : 'text-gray-600 hover:bg-gray-50'}`}
             >
-              <div className="w-10 h-10 rounded bg-gray-200 mr-3 flex-shrink-0 overflow-hidden">
+              <div className="w-10 h-10 rounded bg-gray-200 mr-3 flex-shrink-0 overflow-hidden relative">
                 <img 
-                  src={`https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=100&auto=format&fit=crop&q=60&random=${index}`}
-                  alt=""
-                  className="w-full h-full object-cover"
+                  src={`https://loremflickr.com/100/100/${encodeURIComponent(category.name).toLowerCase() === 'all' ? 'blog' : encodeURIComponent(category.name).toLowerCase()}?lock=${index + 1}`}
+                  alt={category.name}
+                  className="w-full h-full object-cover relative z-10"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = `https://picsum.photos/seed/${category._id}/100/100`;
+                  }}
                 />
               </div>
               <span className="text-sm flex-1">{category.name}</span>

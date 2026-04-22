@@ -161,8 +161,12 @@ const PostDetails = () => {
           
           <div className="flex items-center justify-between pb-8 border-b border-[var(--border)]">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-lg">
-                {post.author?.username?.charAt(0).toUpperCase() || '?'}
+                <div className="w-12 h-12 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-lg overflow-hidden">
+                  {post.author?.profilePicture ? (
+                    <img src={post.author.profilePicture} alt={post.author.username} className="w-full h-full object-cover" />
+                  ) : (
+                    post.author?.username?.charAt(0).toUpperCase() || '?'
+                  )}
               </div>
               <div>
                 <div className="flex items-center gap-3">
@@ -239,8 +243,12 @@ const PostDetails = () => {
           {user ? (
             <form onSubmit={handleCommentSubmit} className="mb-10 p-4 bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-sm">
               <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold flex-shrink-0">
-                  {user.username?.charAt(0).toUpperCase() || '?'}
+                  <div className="w-10 h-10 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold flex-shrink-0 overflow-hidden">
+                    {user.profilePicture ? (
+                      <img src={user.profilePicture} alt={user.username} className="w-full h-full object-cover" />
+                    ) : (
+                      user.username?.charAt(0).toUpperCase() || '?'
+                    )}
                 </div>
                 <div className="flex-1">
                   <textarea

@@ -20,13 +20,10 @@ const PostCard = ({ post, user, onDelete, isInitiallyLiked, isInitiallySaved }) 
   const [isLiked, setIsLiked] = useState(Boolean(isInitiallyLiked));
   const [isSaved, setIsSaved] = useState(Boolean(isInitiallySaved));
   const [likeCount, setLikeCount] = useState(post.likesCount ?? 12);
-  const [commentCount, setCommentCount] = useState(post.commentsCount ?? 3);
+  const [commentCount, setCommentCount] = useState(post.comments?.length || post.commentsCount || 0);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   const [commentValue, setCommentValue] = useState('');
-  const [comments, setComments] = useState([
-    { id: 1, name: 'Ava Reed', text: 'Loved this insight. Clean and sharp.' },
-    { id: 2, name: 'Marco Li', text: 'This made my morning routine better.' }
-  ]);
+  const [comments, setComments] = useState(post.comments || []);
   const [isSharing, setIsSharing] = useState(false);
   const [isLikeBump, setIsLikeBump] = useState(false);
   const [isActionBusy, setIsActionBusy] = useState(false);
@@ -124,17 +121,22 @@ const PostCard = ({ post, user, onDelete, isInitiallyLiked, isInitiallySaved }) 
     }
   };
 
-  const handleAddComment = (event) => {
+  const handleAddComment = async (event) => {
     event.preventDefault();
-    if (!commentValue.trim()) return;
-    const newComment = {
-      id: Date.now(),
-      name: user?.username || 'Guest',
-      text: commentValue.trim()
-    };
-    setComments((prev) => [newComment, ...prev]);
-    setCommentValue('');
-    setCommentCount((prev) => prev + 1);
+    if (!commentValue.trim() || isActionBusy) return;
+    
+    setIsActionBusy(true);
+    try {
+      const res = await api.post(`/posts/${post._id}/comments`, { text: commentValue.trim() });
+      const addedComment = res.data.data;
+      setComments((prev) => [...prev, addedComment]);
+      setCommentValue('');
+      setCommentCount((prev) => prev + 1);
+    } catch (err) {
+      console.error('Failed to add comment', err);
+    } finally {
+      setIsActionBusy(false);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -168,9 +170,15 @@ const PostCard = ({ post, user, onDelete, isInitiallyLiked, isInitiallySaved }) 
             className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 bg-gray-100 group-hover:scale-105 transition-transform duration-500">
-            <span className="text-5xl font-brand font-bold opacity-30">B</span>
-          </div>
+          <img
+            src={`https://loremflickr.com/600/400/${encodeURIComponent(post.category?.name || 'blog').toLowerCase()}?lock=${post._id}`}
+            alt={post.title}
+            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = `https://picsum.photos/seed/${post._id}/600/400`;
+            }}
+          />
         )}
         <div className="absolute top-4 left-4">
           <span className="bg-white/90 backdrop-blur-sm text-[var(--accent)] text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
@@ -181,12 +189,18 @@ const PostCard = ({ post, user, onDelete, isInitiallyLiked, isInitiallySaved }) 
       
       <div className="p-6 flex flex-col flex-1">
         <div className="flex items-center text-xs text-gray-400 mb-3 space-x-2 font-medium">
-          <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[var(--accent)] to-[var(--gold)] flex items-center justify-center text-white text-[9px] uppercase">
-            {post.author?.username?.charAt(0) || '?'}
+            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-[var(--accent)] to-[var(--gold)] flex items-center justify-center text-white text-[9px] uppercase overflow-hidden">
+              {post.author?.profilePicture ? (
+                <img src={post.author.profilePicture} alt={post.author.username} className="w-full h-full object-cover" />
+              ) : (
+                post.author?.username?.charAt(0) || '?'
+              )}
           </div>
           <span className="text-[var(--ink)]">{post.author?.username || 'Unknown'}</span>
           <span>•</span>
           <span>{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          <span>•</span>
+          <span>{post.readTime || 1} min read</span>
         </div>
         
         <Link to={`/posts/${post._id}`} className="block flex-1 group-hover:text-[var(--accent)] transition-colors">
@@ -280,12 +294,12 @@ const PostCard = ({ post, user, onDelete, isInitiallyLiked, isInitiallySaved }) 
              
              <div className="space-y-3">
                 {comments.map(c => (
-                  <div key={c.id} className="flex gap-2">
+                  <div key={c._id || c.id} className="flex gap-2">
                     <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-600">
-                      {c.name.charAt(0)}
+                      {(c.user?.username || c.name || '?').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 bg-gray-50 p-2 rounded-lg text-xs border border-gray-100">
-                      <p className="font-bold text-gray-800 mb-0.5">{c.name}</p>
+                      <p className="font-bold text-gray-800 mb-0.5">{c.user?.username || c.name}</p>
                       <p className="text-gray-600 leading-relaxed">{c.text}</p>
                     </div>
                   </div>

@@ -38,7 +38,31 @@ const UserSchema = new mongoose.Schema({
       type: mongoose.Schema.ObjectId,
       ref: 'Post'
     }
-  ]
+  ],
+  followers: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    }
+  ],
+  following: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    }
+  ],
+  profilePicture: {
+    type: String,
+    default: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
+  },
+  resetPasswordOtp: {
+    type: String,
+    select: false
+  },
+  resetPasswordOtpExpiry: {
+    type: Date,
+    select: false
+  }
 }, { timestamps: true });
 
 // Encrypt password using bcrypt

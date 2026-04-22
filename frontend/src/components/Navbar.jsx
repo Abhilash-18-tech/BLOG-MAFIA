@@ -14,7 +14,8 @@ import {
   LogOut,
   FileText,
   Sparkles,
-  MessageCircle
+  MessageCircle,
+  ChevronDown
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -26,6 +27,7 @@ const Navbar = () => {
     return localStorage.getItem('theme') === 'dark';
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const notifications = [
     { id: 1, title: 'New like on "Designing with Depth"', time: '2m ago' },
@@ -97,11 +99,34 @@ const Navbar = () => {
 
           <div className="hidden md:flex items-center justify-center space-x-6 flex-1 px-8 text-sm font-medium text-[var(--ink)]">
             <Link to="/" className="hover:text-[var(--accent)] transition">Home</Link>
-            <a href="#" onClick={(e) => { e.preventDefault(); alert('Pages section coming soon!'); }} className="hover:text-[var(--accent)] transition">Pages</a>
+            <Link to="/about" className="hover:text-[var(--accent)] transition">About</Link>
             <Link to="/" className="hover:text-[var(--accent)] transition">Blog</Link>
-            <a href="#" onClick={(e) => { e.preventDefault(); alert('Categories are in the sidebar on the Home page!'); }} className="hover:text-[var(--accent)] transition">Categories</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); alert('Shop section coming soon!'); }} className="hover:text-[var(--accent)] transition">Shop</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); alert('Elements section coming soon!'); }} className="hover:text-[var(--accent)] transition">Elements</a>
+            
+            {/* Categories Dropdown */}
+            <div className="relative" 
+              onMouseEnter={() => setIsCategoriesOpen(true)}
+              onMouseLeave={() => setIsCategoriesOpen(false)}
+            >
+              <button className="flex items-center hover:text-[var(--accent)] transition gap-1 focus:outline-none">
+                Categories <ChevronDown className="w-4 h-4" />
+              </button>
+              {isCategoriesOpen && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] shadow-xl rounded-xl overflow-hidden z-50">
+                  <div className="py-2 flex flex-col">
+                    {['Technology', 'Lifestyle', 'Travel', 'Food', 'Business'].map((cat) => (
+                      <Link 
+                        key={cat} 
+                        to={`/?category=${cat}`}
+                        className="px-4 py-2 hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] transition text-[var(--ink)] text-sm"
+                        onClick={() => setIsCategoriesOpen(false)}
+                      >
+                        {cat}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -135,8 +160,12 @@ const Navbar = () => {
                     aria-haspopup="menu"
                   >
                     <span className="sr-only">Open user menu</span>
-                    <div className="relative h-10 w-10 rounded-full bg-[var(--ink)] text-white flex items-center justify-center font-bold uppercase shadow-inner">
-                      {user?.username?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                    <div className="relative h-10 w-10 rounded-full bg-[var(--ink)] text-white flex items-center justify-center font-bold uppercase shadow-inner overflow-hidden">
+                      {user?.profilePicture ? (
+                        <img src={user.profilePicture} alt={user.username} className="w-full h-full object-cover" />
+                      ) : (
+                        user?.username?.charAt(0) || user?.email?.charAt(0) || 'U'
+                      )}
                       <span className="avatar-badge">{notifications.length}</span>
                     </div>
                   </button>
@@ -145,8 +174,12 @@ const Navbar = () => {
                       <div className="user-menu-overlay" onClick={() => setIsMenuOpen(false)} />
                       <div className="user-menu-panel" role="menu">
                         <div className="user-menu-top">
-                          <div className="user-menu-avatar">
-                            {user?.username?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                          <div className="user-menu-avatar overflow-hidden">
+                            {user?.profilePicture ? (
+                              <img src={user.profilePicture} alt={user.username} className="w-full h-full object-cover" />
+                            ) : (
+                              user?.username?.charAt(0) || user?.email?.charAt(0) || 'U'
+                            )}
                           </div>
                           <div>
                             <p className="text-base font-semibold">{user?.username || 'User'}</p>

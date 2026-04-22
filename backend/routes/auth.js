@@ -1,6 +1,6 @@
 const express = require('express');
 const passport = require('passport');
-const { register, login, generateToken, getMe } = require('../controllers/authController');
+const { register, login, generateToken, getMe, forgotPassword, verifyOtp, resetPassword } = require('../controllers/authController');
 const { protect } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -8,6 +8,9 @@ const router = express.Router();
 router.post('/register', register);
 router.post('/login', login);
 router.get('/me', protect, getMe);
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-otp', verifyOtp);
+router.post('/reset-password', resetPassword);
 
 // @desc    Auth with Google
 // @route   GET /api/auth/google

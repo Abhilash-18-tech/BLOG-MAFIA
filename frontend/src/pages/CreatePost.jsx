@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Image as ImageIcon, Heading1, Code, Type } from 'lucide-react';
+import { Image as ImageIcon, Heading1, Code, Type, Sparkles, Loader2 } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../hooks/useAuth';
 
@@ -13,6 +13,10 @@ const CreatePost = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // AI states
+  const [aiLoading, setAiLoading] = useState({ title: false, summary: false, category: false });
+  const [suggestedTitles, setSuggestedTitles] = useState([]);
   
   // Slash command state
   const [showSlashMenu, setShowSlashMenu] = useState(false);
@@ -32,6 +36,33 @@ const CreatePost = () => {
     };
     fetchCategories();
   }, []);
+
+  // Load draft
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('blog_draft');
+    if (savedDraft) {
+      try {
+        const { title: dTitle, description: dDesc, content: dContent, category: dCat } = JSON.parse(savedDraft);
+        if (dTitle) setTitle(dTitle);
+        if (dDesc) setDescription(dDesc);
+        if (dContent) setContent(dContent);
+        if (dCat) setCategory(dCat);
+        if (editorRef.current && dContent) {
+          editorRef.current.innerHTML = dContent;
+        }
+      } catch(e) {}
+    }
+  }, []);
+
+  // Save draft
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (title || description || content || category) {
+        localStorage.setItem('blog_draft', JSON.stringify({ title, description, content, category }));
+      }
+    }, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [title, description, content, category]);
 
   // Handle Notion-like slash commands
   const handleEditorInput = (e) => {
@@ -64,7 +95,66 @@ const CreatePost = () => {
      }
      editorRef.current?.focus();
   };
+  // --- AI API CALLS ---
+  const handleSuggestTitle = async () => {
+    if (!content || content.length < 20) {
+      return setError('Please write some content first so AI can suggest a title.');
+    }
+    setAiLoading(prev => ({ ...prev, title: true }));
+    setError('');
+    try {
+      const res = await api.post('/ai/title', { content });
+      if (res.data.titles) {
+        setSuggestedTitles(res.data.titles);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'AI Failed to suggest title');
+    } finally {
+      setAiLoading(prev => ({ ...prev, title: false }));
+    }
+  };
 
+  const handleGenerateSummary = async () => {
+    if (!content || content.length < 20) {
+      return setError('Please write some content first so AI can summarize it.');
+    }
+    setAiLoading(prev => ({ ...prev, summary: true }));
+    setError('');
+    try {
+      const res = await api.post('/ai/summary', { content });
+      if (res.data.summary) {
+        setDescription(res.data.summary);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'AI Failed to generate summary');
+    } finally {
+      setAiLoading(prev => ({ ...prev, summary: false }));
+    }
+  };
+
+  const handleSuggestCategory = async () => {
+    if (!content || content.length < 20) {
+      return setError('Please write some content first so AI can suggest a category.');
+    }
+    setAiLoading(prev => ({ ...prev, category: true }));
+    setError('');
+    try {
+      const res = await api.post('/ai/category', { content });
+      const suggested = res.data.category;
+      if (suggested) {
+        const match = categories.find(c => c.name.toLowerCase() === suggested.toLowerCase());
+        if (match) {
+          setCategory(match._id);
+        } else {
+          setError(`AI suggested category '${suggested}' which is not in your list. Please select one manually.`);
+        }
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'AI Failed to suggest category');
+    } finally {
+      setAiLoading(prev => ({ ...prev, category: false }));
+    }
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title || !content || !category || !description) {
@@ -88,6 +178,7 @@ const CreatePost = () => {
       }
 
       await api.post('/posts', dataToUpload, config);
+      localStorage.removeItem('blog_draft');
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create post');
@@ -115,6 +206,18 @@ const CreatePost = () => {
         {error && <div className="text-red-600 bg-red-50 p-4 rounded-xl border border-red-100">{error}</div>}
         
         <div>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Title</label>
+            <button 
+              type="button" 
+              onClick={handleSuggestTitle} 
+              disabled={aiLoading.title}
+              title="Suggest Title with AI"
+              className="flex items-center justify-center w-8 h-8 text-[var(--accent)] hover:bg-[var(--accent-soft)] rounded-full transition-colors"
+            >
+              {aiLoading.title ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            </button>
+          </div>
           <input
             type="text"
             placeholder="Title"
@@ -123,9 +226,34 @@ const CreatePost = () => {
             className="w-full text-5xl lg:text-6xl font-brand font-black placeholder-[var(--muted)] border-none focus:ring-0 p-0 bg-transparent text-[var(--ink)] leading-tight"
             autoFocus
           />
+          {suggestedTitles.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {suggestedTitles.map((t, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => { setTitle(t); setSuggestedTitles([]); }}
+                  className="px-3 py-1.5 text-xs bg-[var(--accent-soft)] text-[var(--accent)] rounded-full hover:opacity-80 transition-opacity whitespace-normal text-left"
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Description / Summary</label>
+            <button 
+              type="button" 
+              onClick={handleGenerateSummary} 
+              disabled={aiLoading.summary}
+              title="Generate Summary with AI"
+              className="flex items-center justify-center w-8 h-8 text-[var(--accent)] hover:bg-[var(--accent-soft)] rounded-full transition-colors"
+            >
+              {aiLoading.summary ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            </button>
+          </div>
           <input
             type="text"
             placeholder="Write a short description..."
@@ -136,19 +264,21 @@ const CreatePost = () => {
           />
         </div>
 
-        <div className="flex gap-6 items-center border-y border-[var(--border)] py-6">
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] rounded-full px-4 py-2 text-sm shadow-sm focus:border-[var(--accent)] focus:ring-[var(--accent)] outline-none cursor-pointer"
-          >
-            <option value="">Select a category</option>
-            {categories.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+        <div className="flex gap-6 items-center border-y border-[var(--border)] py-6 flex-wrap">
+          <div className="flex items-center gap-4">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] rounded-full px-4 py-2 text-sm shadow-sm focus:border-[var(--accent)] focus:ring-[var(--accent)] outline-none cursor-pointer"
+            >
+              <option value="">Select a category</option>
+              {categories.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="flex items-center gap-3">
             <label className="text-sm font-medium text-[var(--muted)] whitespace-nowrap">Cover Image</label>
