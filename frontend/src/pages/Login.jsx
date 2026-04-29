@@ -104,7 +104,6 @@ const Login = () => {
                             </svg>
                             Sign in with Google
                         </a>
-                        <p className="text-center text-xs text-gray-500">Google sign-in available soon</p>
                     </div>
 
                     <div className="mt-6 text-center text-sm text-gray-600">
