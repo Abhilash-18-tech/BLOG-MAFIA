@@ -4,6 +4,7 @@ const { register, login, generateToken, getMe, forgotPassword, verifyOtp, resetP
 const { protect } = require('../middlewares/auth');
 
 const router = express.Router();
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
 
 router.post('/register', register);
 router.post('/login', login);
@@ -20,11 +21,11 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 // @route   GET /api/auth/google/callback
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: 'http://localhost:5173/login?error=auth_failed' }),
+  passport.authenticate('google', { failureRedirect: `${clientUrl}/login?error=auth_failed` }),
   (req, res) => {
     // Successful authentication, generate token
     const token = generateToken(req.user._id);
-    res.redirect(`http://localhost:5173/?token=${token}`);
+    res.redirect(`${clientUrl}/?token=${token}`);
   }
 );
 
