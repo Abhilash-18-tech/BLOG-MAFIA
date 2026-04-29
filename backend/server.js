@@ -38,10 +38,21 @@ seedCategories();
 
 const app = express();
 const server = http.createServer(app);
+
+const clientOrigins = (process.env.CLIENT_URLS || process.env.CLIENT_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const corsOptions = clientOrigins.length
+  ? { origin: clientOrigins, credentials: true }
+  : { origin: '*', credentials: false };
+
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: corsOptions.origin,
+    methods: ['GET', 'POST'],
+    credentials: corsOptions.credentials
   }
 });
 
@@ -101,15 +112,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Enable CORS
-app.use(cors());
+app.use(cors(corsOptions));
 
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const passport = require('./config/passport');
 
 // Sessions
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'supersecret_session',
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI
+    }),
     resave: false,
     saveUninitialized: false
   })

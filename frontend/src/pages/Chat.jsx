@@ -15,6 +15,8 @@ const Chat = () => {
   const [loading, setLoading] = useState(true);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const socketBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
 
   // Scroll to bottom when messages update
   const scrollToBottom = () => {
@@ -29,7 +31,7 @@ const Chat = () => {
     if (!user) return;
 
     // Connect to Socket.io once per user session
-    socketRef.current = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000');
+    socketRef.current = io(socketBaseUrl);
     
     // Join personal room for private DMs
     socketRef.current.emit('setup', user);

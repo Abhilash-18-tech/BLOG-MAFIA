@@ -21,6 +21,8 @@ const PostDetails = () => {
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const socketRef = useRef(null);
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const socketBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -51,7 +53,7 @@ const PostDetails = () => {
     };
 
     // Setup Socket.io connection
-    socketRef.current = io('http://localhost:5000');
+    socketRef.current = io(socketBaseUrl);
     
     // Join the specific post room
     socketRef.current.emit('join_post', id);
