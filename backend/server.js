@@ -116,13 +116,14 @@ app.use(cors(corsOptions));
 
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const MongoStoreClient = MongoStore.default || MongoStore.MongoStore || MongoStore;
 const passport = require('./config/passport');
 
 // Sessions
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'supersecret_session',
-    store: MongoStore.create({
+    store: MongoStoreClient.create({
       mongoUrl: process.env.MONGO_URI
     }),
     resave: false,
