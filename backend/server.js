@@ -44,15 +44,24 @@ const clientOrigins = (process.env.CLIENT_URLS || process.env.CLIENT_URL || '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-const corsOptions = clientOrigins.length
-  ? { origin: clientOrigins, credentials: true }
-  : { origin: '*', credentials: false };
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || clientOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
 const io = new Server(server, {
   cors: {
     origin: corsOptions.origin,
     methods: ['GET', 'POST'],
-    credentials: corsOptions.credentials
+    credentials: true
   }
 });
 
